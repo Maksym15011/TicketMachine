@@ -1,7 +1,6 @@
 from cart import Cart
 from payment import Payment_method
 from ticket import Ticket
-
 import json
 
 class TicketMachine:
