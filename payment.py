@@ -1,56 +1,54 @@
 import re
 
-class Payment_method:
-    def __init__(self, amount):
-        self.amount = amount
+class PaymentProcessor:
+    def __init__(self, total):
+        self.total = total
 
-    def process(self):
-        print(f"Kwota do zapłaty - {self.amount} zł")
-        method = input("Wybierz metodę płatności: \nb - BLIK\nk - karta\ng - gotówka\n")
+    def process_payment(self):
+        print(f"\nKwota do zapłaty: {self.total} zł")
+        method = input("Wybierz metodę płatności: \nb - BLIK \nk - karta \ng - gotówka\n").lower()
 
-        if method == "b":
-            self._blik()
-        elif method == "k":
-            self._card()
-        elif method == "g":
-            self._cash()
+        if method == 'b':
+            self.blik_payment()
+        elif method == 'k':
+            self.card_payment()
+        elif method == 'g':
+            self.cash_payment()
         else:
-            retry = input("Niepoprawna opcja. Spróbować ponownie (t/n)? ")
-            if retry.lower() == "t":
-                self.process()
+            retry = input("Niepoprawny wybór. Spróbować ponownie? (t/n): ").lower()
+            if retry == 't':
+                self.process_payment()
             else:
                 exit()
 
-    def _blik(self):
+    def blik_payment(self):
         code = input("Podaj kod BLIK: ")
-        if re.fullmatch(r"\d{6}", code):
-            print("Transakcja się powiodła.")
+        if re.fullmatch(r'\d{6}', code):
+            print("Transakcja powiodła się.")
         else:
-            retry = input("Niepoprawny kod. Spróbować ponownie (t/n)? ")
-            if retry.lower() == "t":
-                self._blik()
+            retry = input("Zły kod. Spróbować jeszcze raz? (t/n): ").lower()
+            if retry == 't':
+                self.blik_payment()
             else:
                 exit()
 
-    def _card(self):
+    def card_payment(self):
         print("Proszę zbliżyć kartę...")
-        input("Potwierdź transakcję: ")
-        print("Transakcja się powiodła.")
+        input("Potwierdź transakcję Enterem.")
+        print("Transakcja powiodła się.")
 
-    def _cash(self):
+    def cash_payment(self):
         paid = 0
-        while paid < self.amount:
+        while paid < self.total:
             try:
-                paid += float(input("Wprowadź gotówkę: "))
+                paid += float(input(f"Wrzuć gotówkę (brakuje {self.total - paid:.2f} zł): "))
             except ValueError:
-                print("Niepoprawna kwota.")
                 continue
-
-            if paid < self.amount:
-                retry = input("Za mało gotówki. Dopłacić? (t/n) ")
-                if retry.lower() != "t":
+            if paid < self.total:
+                retry = input("Za mało. Dopłacić? (t/n): ").lower()
+                if retry != 't':
                     exit()
-
-        if paid > self.amount:
-            print(f"Reszta: {round(paid - self.amount, 2)} zł")
-        print("Transakcja się powiodła.")
+        change = round(paid - self.total, 2)
+        print("Transakcja gotówkowa powiodła się.")
+        if change > 0:
+            print(f"Wydaję resztę: {change:.2f} zł")

@@ -1,44 +1,67 @@
-from cart import Cart
-from payment import Payment_method
-from ticket import Ticket
 import json
+from ticket import Ticket
+from cart import Cart
+from payment import PaymentProcessor
 
-class TicketMachine:
-    def __init__(self, prices_file):
-        with open(prices_file, "r", encoding="UTF-8") as file:
-            self.menu = json.load(file)
-        self.cart = Cart()
+class TicketSelector:
+    def __init__(self, price_file):
+        with open(price_file, "r", encoding="utf-8") as f:
+            self.prices = json.load(f)
 
-    def run(self):
-        print("Witamy w automacie biletowym.")
-        self._add_tickets()
-        total = self.cart.total_price()
-        Payment_method(total).process()
-        input("Drukowanie biletów. Proszę czekać...")
-        self.cart.display()
-        print("Dziękujemy za skorzystanie z automatu biletowego!")
+    def display_menu(self, menu=None, path=None):
+        if menu is None:
+            menu = self.prices
+            path = []
 
-    def _add_tickets(self):
-        add_more = "t"
-        while add_more.lower() == "t":
-            name, price = self._choose_ticket(self.menu)
-            self.cart.add_ticket(Ticket(name, price))
-            add_more = input("Czy chcesz dodać kolejny bilet (t/n)? ")
-
-    def _choose_ticket(self, menu):
-        print("Jaką opcję biletu chcesz kupić?")
         options = list(menu.keys())
+        print("\nWybierz opcję:")
         for i, option in enumerate(options):
             print(f"{i} - {option}")
+
         try:
             choice = int(input("Wybór: "))
+            if choice < 0 or choice >= len(options):
+                raise ValueError
         except ValueError:
-            print("Niepoprawna wartość.")
-            return self._choose_ticket(menu)
-        if choice < 0 or choice >= len(options):
-            print("Niepoprawny numer.")
-            return self._choose_ticket(menu)
-        selected = menu[options[choice]]
-        if isinstance(selected, dict):
-            return self._choose_ticket(selected)
-        return options[choice], selected
+            print("Nieprawidłowy wybór.")
+            return self.display_menu(menu, path)
+
+        selected_key = options[choice]
+        selected_value = menu[selected_key]
+        path.append(selected_key)
+
+        if isinstance(selected_value, dict):
+            return self.display_menu(selected_value, path)
+        else:
+            return Ticket(path[0], path[1], path[2], selected_value)
+
+def main():
+    selector = TicketSelector("prices.json")
+    cart = Cart()
+
+    while True:
+        ticket = selector.display_menu()
+        cart.add_ticket(ticket)
+        cont = input("Dodać kolejny bilet? (t/n): ").lower()
+        if cont != 't':
+            break
+
+    if cart.is_empty():
+        print("Koszyk jest pusty.")
+        return
+
+    cart.display_cart()
+
+    confirm = input("\nCzy chcesz przejść do płatności? (t/n): ").lower()
+    if confirm == 't':
+        processor = PaymentProcessor(cart.total())
+        processor.process_payment()
+
+        input("\nDrukowanie biletów...")
+        cart.display_cart()
+        print("Dziękujemy za zakup!")
+    else:
+        print("Zakup anulowany.")
+
+if __name__ == "__main__":
+    main()
